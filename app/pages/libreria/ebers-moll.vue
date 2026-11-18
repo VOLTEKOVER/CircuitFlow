@@ -110,10 +110,19 @@ function classify(vBE: number, vBC: number, prm: Config) {
   const bcOn = vBC > threshold
   let region: Region
   let color: BadgeColor
-  if (!beOn && !bcOn) { region = 'Interdizione'; color = 'neutral' }
-  else if (beOn && !bcOn) { region = 'Attiva diretta'; color = 'success' }
-  else if (beOn && bcOn) { region = 'Saturazione'; color = 'warning' }
-  else { region = 'Attiva inversa'; color = 'info' }
+  if (!beOn && !bcOn) {
+    region = 'Interdizione'
+    color = 'neutral'
+  } else if (beOn && !bcOn) {
+    region = 'Attiva diretta'
+    color = 'success'
+  } else if (beOn && bcOn) {
+    region = 'Saturazione'
+    color = 'warning'
+  } else {
+    region = 'Attiva inversa'
+    color = 'info'
+  }
   return {
     region,
     color,
@@ -213,7 +222,7 @@ const transferChart = computed(() => {
   const xTicks = [-0.1, 0.1, 0.3, 0.5, 0.7, 0.9].map(v => ({ v, x: sx(v) }))
   const opX = sx(clamp(params.value.vbe, xMin, xMax))
   const opY = sy(clamp(Math.max(0, op.value.ic), 0, yTop))
-  const snapX = snapshotOp.value ? sx(clamp(snapshot!.vbe, xMin, xMax)) : null
+  const snapX = snapshotOp.value ? sx(clamp(snapshot.value?.vbe ?? params.value.vbe, xMin, xMax)) : null
   const snapY = snapshotOp.value ? sy(clamp(Math.max(0, snapshotOp.value.ic), 0, yTop)) : null
   return { W: CHART_W, H: CHART_H, pad: CHART_PAD, xMin, xMax, yTop, pts, path, sx, sy, yTicks, xTicks, opX, opY, snapX, snapY }
 })
@@ -222,7 +231,7 @@ const outputChart = computed(() => {
   const xMin = 0
   const xMax = 5
   const steps = 120
-  const series = selectedLevels.value.map(vb => {
+  const series = selectedLevels.value.map((vb) => {
     const pts: { x: number, y: number }[] = []
     for (let i = 0; i <= steps; i++) {
       const vce = xMin + (xMax - xMin) * (i / steps)
@@ -266,7 +275,10 @@ function pointerToValue(event: MouseEvent, xMin: number, xMax: number) {
 function onTransferMove(event: MouseEvent) {
   const c = transferChart.value
   const vx = pointerToValue(event, c.xMin, c.xMax)
-  if (vx === null) { hover.value = null; return }
+  if (vx === null) {
+    hover.value = null
+    return
+  }
   const ic = Math.max(0, calc(vx, params.value.vbc).ic)
   const x = c.sx(vx)
   const y = c.sy(clamp(ic, 0, c.yTop))
@@ -281,7 +293,10 @@ function onTransferMove(event: MouseEvent) {
 function onOutputMove(event: MouseEvent) {
   const c = outputChart.value
   const vx = pointerToValue(event, c.xMin, c.xMax)
-  if (vx === null || selectedLevels.value.length === 0) { hover.value = null; return }
+  if (vx === null || selectedLevels.value.length === 0) {
+    hover.value = null
+    return
+  }
   const vb = selectedLevels.value.reduce((best, level) =>
     Math.abs(level - params.value.vbe) < Math.abs(best - params.value.vbe) ? level : best, selectedLevels.value[0]!)
   const ic = Math.max(0, calc(vb, vb - vx).ic)
@@ -352,7 +367,9 @@ function downloadPNG(svg: SVGSVGElement | null, filename: string) {
       ctx.fillStyle = '#ffffff'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
       ctx.drawImage(image, 0, 0, canvas.width, canvas.height)
-      canvas.toBlob(blob => { if (blob) triggerDownload(blob, filename) })
+      canvas.toBlob((blob) => {
+        if (blob) triggerDownload(blob, filename)
+      })
     }
     URL.revokeObjectURL(url)
   }
@@ -398,304 +415,1332 @@ const analysisItems = computed(() => {
     objective="Verificare il modello di Ebers–Moll calcolando correnti e tensioni ai terminali al variare della polarizzazione e osservare le regioni di funzionamento e le caratteristiche I-V."
   >
     <template #theory>
-      <UAlert color="neutral" variant="soft" description="Il modello di Ebers–Moll descrive il transistor bipolare come due giunzioni p-n accoppiate: due diodi (uno base-emettitore, uno base-collettore) e due generatori di corrente controllati che rappresentano il trasporto di carica tra collettore ed emettitore." />
+      <UAlert
+        color="neutral"
+        variant="soft"
+        description="Il modello di Ebers–Moll descrive il transistor bipolare come due giunzioni p-n accoppiate: due diodi (uno base-emettitore, uno base-collettore) e due generatori di corrente controllati che rappresentano il trasporto di carica tra collettore ed emettitore."
+      />
       <UPageGrid class="sm:grid-cols-2">
         <UCard :ui="{ body: 'space-y-1 text-sm' }">
-          <UBadge color="neutral" variant="soft" size="xs" label="Correnti di giunzione" class="w-fit mb-1" />
+          <UBadge
+            color="neutral"
+            variant="soft"
+            size="xs"
+            label="Correnti di giunzione"
+            class="w-fit mb-1"
+          />
           <MathBlock tex="I_F = I_{SF}\!\left(e^{V_{BE}/V_T}-1\right)" />
           <MathBlock tex="I_R = I_{SR}\!\left(e^{V_{BC}/V_T}-1\right)" />
         </UCard>
         <UCard :ui="{ body: 'space-y-1 text-sm' }">
-          <UBadge color="neutral" variant="soft" size="xs" label="Correnti ai terminali" class="w-fit mb-1" />
+          <UBadge
+            color="neutral"
+            variant="soft"
+            size="xs"
+            label="Correnti ai terminali"
+            class="w-fit mb-1"
+          />
           <MathBlock tex="I_C = I_F - \frac{I_R}{\alpha_R}" />
           <MathBlock tex="I_B = \frac{I_F}{\beta_F} + \frac{I_R}{\beta_R}" />
           <MathBlock tex="I_E = I_F\left(1+\frac{1}{\beta_F}\right) - I_R" />
         </UCard>
-        <UCard :ui="{ body: 'space-y-2 text-sm' }">
-          <UBadge color="neutral" variant="soft" size="xs" label="Significato fisico" class="w-fit mb-1" />
-          <p class="text-xs text-muted leading-relaxed"><strong>I_F</strong> è la corrente di carrieri iniettata dall'emettitore e raccolta dal collettore; <strong>I_R</strong> è il flusso inverso dovuto alla giunzione base-collettore. I diodi del modello equivalente trasportano I_F/α_F e I_R/α_R, mentre i generatori controllati trasportano α_F·(I_F/α_F) = I_F e α_R·(I_R/α_R) = I_R.</p>
-          <MathBlock tex="\alpha_F = \frac{\beta_F}{1+\beta_F} \qquad \alpha_R = \frac{\beta_R}{1+\beta_R}" />
-        </UCard>
-        <UCard :ui="{ body: 'space-y-2 text-sm' }">
-          <UBadge color="neutral" variant="soft" size="xs" label="Confronto con il modello semplificato" class="w-fit mb-1" />
-          <p class="text-xs text-muted leading-relaxed">Il modello a grande segnale semplificato vale solo in attiva diretta, con BC inversa e I_R ≈ 0. Il modello completo aggiunge il termine inverso e il fattore 1/α_R, importante in saturazione e attiva inversa.</p>
-          <MathBlock tex="I_C \simeq \beta_F\,I_{SF}\,e^{V_{BE}/V_T}" />
+        <UCard :ui="{ body: 'p-2 text-xs text-muted' }">
+          α_F = β_F/(1+β_F), α_R = β_R/(1+β_R). Il modello semplificato I_C ≈ β_F·I_S·e^(V_BE/V_T) vale solo in attiva diretta.
         </UCard>
       </UPageGrid>
-      <UCard :ui="{ body: 'space-y-2 text-sm' }">
-        <UBadge color="neutral" variant="soft" size="xs" label="Quattro regioni operative" class="w-fit mb-1" />
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <div class="rounded border border-muted p-2"><strong>Interdizione</strong><br /><span class="text-muted">BE inversa · BC inversa</span></div>
-          <div class="rounded border border-muted p-2"><strong>Attiva diretta</strong><br /><span class="text-muted">BE diretta · BC inversa</span></div>
-          <div class="rounded border border-muted p-2"><strong>Saturazione</strong><br /><span class="text-muted">BE diretta · BC diretta</span></div>
-          <div class="rounded border border-muted p-2"><strong>Attiva inversa</strong><br /><span class="text-muted">BE inversa · BC diretta</span></div>
-        </div>
-      </UCard>
-      <UCard :ui="{ body: 'space-y-1 text-sm' }">
-        <UBadge color="neutral" variant="soft" size="xs" label="Esempio numerico (valori iniziali)" class="w-fit mb-1" />
-        <p class="text-xs text-muted leading-relaxed">Con V_BE = 0,70 V, V_T = 0,02585 V e I_SF = 10⁻¹⁴ A si ha e^(V_BE/V_T) ≈ 5,7·10¹¹, quindi I_F ≈ 5,7 mA. Con β_F = 100 risulta I_B ≈ 57 µA e I_C ≈ 5,7 mA: il transistor è in attiva diretta perché V_BC = −1 V polarizza la giunzione BC in inversa.</p>
-      </UCard>
+      <p class="text-xs text-muted">
+        Regioni: BE−/BC− interdizione · BE+/BC− attiva diretta · BE+/BC+ saturazione · BE−/BC+ attiva inversa.
+      </p>
     </template>
 
     <template #schema>
       <UPageGrid class="lg:grid-cols-3">
-        <UCard class="lg:col-span-2" :ui="{ body: 'p-3 sm:p-4' }">
+        <UCard
+          class="lg:col-span-2"
+          :ui="{ body: 'p-3 sm:p-4' }"
+        >
           <UCard :ui="{ body: 'p-2 sm:p-3 bg-elevated/10' }">
-            <svg viewBox="0 0 520 300" class="w-full h-auto" aria-label="Modello equivalente Ebers–Moll con due diodi e due generatori di corrente controllati">
+            <svg
+              viewBox="0 0 520 300"
+              class="w-full h-auto"
+              aria-label="Modello equivalente Ebers–Moll con due diodi e due generatori di corrente controllati"
+            >
               <defs>
-                <marker id="arr-em" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
-                  <path d="M0,0 L7,3.5 L0,7 Z" fill="currentColor" />
+                <marker
+                  id="arr-em"
+                  markerWidth="7"
+                  markerHeight="7"
+                  refX="6"
+                  refY="3.5"
+                  orient="auto"
+                >
+                  <path
+                    d="M0,0 L7,3.5 L0,7 Z"
+                    fill="currentColor"
+                  />
                 </marker>
               </defs>
-              <circle cx="40" cy="150" r="4" fill="var(--ui-primary)" />
-              <circle cx="470" cy="50" r="4" fill="var(--ui-primary)" />
-              <circle cx="470" cy="250" r="4" fill="var(--ui-primary)" />
-              <text x="18" y="154" font-size="13" font-weight="600" fill="currentColor">B</text>
-              <text x="482" y="54" font-size="13" font-weight="600" fill="currentColor">C</text>
-              <text x="482" y="254" font-size="13" font-weight="600" fill="currentColor">E</text>
-              <line x1="40" y1="150" x2="120" y2="150" stroke="currentColor" stroke-opacity="0.5" stroke-width="2" />
-              <line x1="120" y1="150" x2="120" y2="70" stroke="currentColor" stroke-opacity="0.5" stroke-width="2" />
-              <line x1="120" y1="150" x2="120" y2="230" stroke="currentColor" stroke-opacity="0.5" stroke-width="2" />
-              <line x1="120" y1="70" x2="210" y2="70" stroke="currentColor" stroke-opacity="0.5" stroke-width="2" />
-              <polygon points="210,58 210,82 232,70" fill="none" stroke="currentColor" stroke-width="2" />
-              <line x1="232" y1="58" x2="232" y2="82" stroke="currentColor" stroke-width="2" />
-              <line x1="232" y1="70" x2="300" y2="70" stroke="currentColor" stroke-opacity="0.5" stroke-width="2" />
-              <line x1="300" y1="70" x2="300" y2="50" stroke="currentColor" stroke-opacity="0.5" stroke-width="2" />
-              <line x1="300" y1="50" x2="470" y2="50" stroke="currentColor" stroke-opacity="0.5" stroke-width="2" />
-              <line x1="120" y1="230" x2="210" y2="230" stroke="currentColor" stroke-opacity="0.5" stroke-width="2" />
-              <polygon points="210,218 210,242 232,230" fill="none" stroke="currentColor" stroke-width="2" />
-              <line x1="232" y1="218" x2="232" y2="242" stroke="currentColor" stroke-width="2" />
-              <line x1="232" y1="230" x2="300" y2="230" stroke="currentColor" stroke-opacity="0.5" stroke-width="2" />
-              <line x1="300" y1="230" x2="300" y2="250" stroke="currentColor" stroke-opacity="0.5" stroke-width="2" />
-              <line x1="300" y1="250" x2="470" y2="250" stroke="currentColor" stroke-opacity="0.5" stroke-width="2" />
-              <line x1="360" y1="50" x2="360" y2="110" stroke="currentColor" stroke-opacity="0.5" stroke-width="2" />
-              <line x1="420" y1="50" x2="420" y2="110" stroke="currentColor" stroke-opacity="0.5" stroke-width="2" />
-              <line x1="360" y1="190" x2="360" y2="250" stroke="currentColor" stroke-opacity="0.5" stroke-width="2" />
-              <line x1="420" y1="190" x2="420" y2="250" stroke="currentColor" stroke-opacity="0.5" stroke-width="2" />
-              <circle cx="360" cy="150" r="22" fill="none" stroke="var(--ui-primary)" stroke-width="2" />
-              <line x1="360" y1="133" x2="360" y2="167" stroke="var(--ui-primary)" stroke-width="2" />
-              <polygon points="360,167 354,156 366,156" fill="var(--ui-primary)" />
-              <line x1="360" y1="110" x2="360" y2="128" stroke="currentColor" stroke-opacity="0.5" stroke-width="2" />
-              <line x1="360" y1="172" x2="360" y2="190" stroke="currentColor" stroke-opacity="0.5" stroke-width="2" />
-              <circle cx="420" cy="150" r="22" fill="none" stroke="var(--ui-primary)" stroke-width="2" />
-              <line x1="420" y1="133" x2="420" y2="167" stroke="var(--ui-primary)" stroke-width="2" />
-              <polygon points="420,133 414,144 426,144" fill="var(--ui-primary)" />
-              <line x1="420" y1="110" x2="420" y2="128" stroke="currentColor" stroke-opacity="0.5" stroke-width="2" />
-              <line x1="420" y1="172" x2="420" y2="190" stroke="currentColor" stroke-opacity="0.5" stroke-width="2" />
-              <text x="200" y="44" font-size="11" font-weight="600" fill="currentColor">D_R</text>
-              <text x="204" y="56" font-size="9" fill="currentColor" opacity="0.75">I_R/α_R = {{ formatCurrent(op.iDC) }}</text>
-              <text x="200" y="204" font-size="11" font-weight="600" fill="currentColor">D_F</text>
-              <text x="204" y="216" font-size="9" fill="currentColor" opacity="0.75">I_F/α_F = {{ formatCurrent(op.iDE) }}</text>
-              <text x="306" y="138" font-size="10" fill="var(--ui-primary)">α_F·I_DE = I_F</text>
-              <text x="306" y="152" font-size="9" fill="currentColor" opacity="0.75">{{ formatCurrent(op.iF) }}</text>
-              <text x="438" y="138" font-size="10" fill="var(--ui-primary)">α_R·I_DC = I_R</text>
-              <text x="438" y="152" font-size="9" fill="currentColor" opacity="0.75">{{ formatCurrent(op.iR) }}</text>
-              <text x="132" y="34" font-size="10" fill="currentColor" opacity="0.75">V_BC = {{ formatNum(vbc, 3) }} V · {{ op.bcBias }}</text>
-              <text x="132" y="258" font-size="10" fill="currentColor" opacity="0.75">V_BE = {{ formatNum(vbe, 3) }} V · {{ op.beBias }}</text>
-              <text x="55" y="138" font-size="10" fill="var(--ui-primary)">I_B {{ formatCurrent(op.ib) }}</text>
-              <text x="388" y="24" font-size="10" fill="var(--ui-primary)">I_C {{ formatCurrent(op.ic) }}</text>
-              <text x="388" y="282" font-size="10" fill="var(--ui-primary)">I_E {{ formatCurrent(op.ie) }}</text>
+              <circle
+                cx="40"
+                cy="150"
+                r="4"
+                fill="var(--ui-primary)"
+              />
+              <circle
+                cx="470"
+                cy="50"
+                r="4"
+                fill="var(--ui-primary)"
+              />
+              <circle
+                cx="470"
+                cy="250"
+                r="4"
+                fill="var(--ui-primary)"
+              />
+              <text
+                x="18"
+                y="154"
+                font-size="13"
+                font-weight="600"
+                fill="currentColor"
+              >B</text>
+              <text
+                x="482"
+                y="54"
+                font-size="13"
+                font-weight="600"
+                fill="currentColor"
+              >C</text>
+              <text
+                x="482"
+                y="254"
+                font-size="13"
+                font-weight="600"
+                fill="currentColor"
+              >E</text>
+              <line
+                x1="40"
+                y1="150"
+                x2="120"
+                y2="150"
+                stroke="currentColor"
+                stroke-opacity="0.5"
+                stroke-width="2"
+              />
+              <line
+                x1="120"
+                y1="150"
+                x2="120"
+                y2="70"
+                stroke="currentColor"
+                stroke-opacity="0.5"
+                stroke-width="2"
+              />
+              <line
+                x1="120"
+                y1="150"
+                x2="120"
+                y2="230"
+                stroke="currentColor"
+                stroke-opacity="0.5"
+                stroke-width="2"
+              />
+              <line
+                x1="120"
+                y1="70"
+                x2="210"
+                y2="70"
+                stroke="currentColor"
+                stroke-opacity="0.5"
+                stroke-width="2"
+              />
+              <polygon
+                points="210,58 210,82 232,70"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              />
+              <line
+                x1="232"
+                y1="58"
+                x2="232"
+                y2="82"
+                stroke="currentColor"
+                stroke-width="2"
+              />
+              <line
+                x1="232"
+                y1="70"
+                x2="300"
+                y2="70"
+                stroke="currentColor"
+                stroke-opacity="0.5"
+                stroke-width="2"
+              />
+              <line
+                x1="300"
+                y1="70"
+                x2="300"
+                y2="50"
+                stroke="currentColor"
+                stroke-opacity="0.5"
+                stroke-width="2"
+              />
+              <line
+                x1="300"
+                y1="50"
+                x2="470"
+                y2="50"
+                stroke="currentColor"
+                stroke-opacity="0.5"
+                stroke-width="2"
+              />
+              <line
+                x1="120"
+                y1="230"
+                x2="210"
+                y2="230"
+                stroke="currentColor"
+                stroke-opacity="0.5"
+                stroke-width="2"
+              />
+              <polygon
+                points="210,218 210,242 232,230"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              />
+              <line
+                x1="232"
+                y1="218"
+                x2="232"
+                y2="242"
+                stroke="currentColor"
+                stroke-width="2"
+              />
+              <line
+                x1="232"
+                y1="230"
+                x2="300"
+                y2="230"
+                stroke="currentColor"
+                stroke-opacity="0.5"
+                stroke-width="2"
+              />
+              <line
+                x1="300"
+                y1="230"
+                x2="300"
+                y2="250"
+                stroke="currentColor"
+                stroke-opacity="0.5"
+                stroke-width="2"
+              />
+              <line
+                x1="300"
+                y1="250"
+                x2="470"
+                y2="250"
+                stroke="currentColor"
+                stroke-opacity="0.5"
+                stroke-width="2"
+              />
+              <line
+                x1="360"
+                y1="50"
+                x2="360"
+                y2="110"
+                stroke="currentColor"
+                stroke-opacity="0.5"
+                stroke-width="2"
+              />
+              <line
+                x1="420"
+                y1="50"
+                x2="420"
+                y2="110"
+                stroke="currentColor"
+                stroke-opacity="0.5"
+                stroke-width="2"
+              />
+              <line
+                x1="360"
+                y1="190"
+                x2="360"
+                y2="250"
+                stroke="currentColor"
+                stroke-opacity="0.5"
+                stroke-width="2"
+              />
+              <line
+                x1="420"
+                y1="190"
+                x2="420"
+                y2="250"
+                stroke="currentColor"
+                stroke-opacity="0.5"
+                stroke-width="2"
+              />
+              <circle
+                cx="360"
+                cy="150"
+                r="22"
+                fill="none"
+                stroke="var(--ui-primary)"
+                stroke-width="2"
+              />
+              <line
+                x1="360"
+                y1="133"
+                x2="360"
+                y2="167"
+                stroke="var(--ui-primary)"
+                stroke-width="2"
+              />
+              <polygon
+                points="360,167 354,156 366,156"
+                fill="var(--ui-primary)"
+              />
+              <line
+                x1="360"
+                y1="110"
+                x2="360"
+                y2="128"
+                stroke="currentColor"
+                stroke-opacity="0.5"
+                stroke-width="2"
+              />
+              <line
+                x1="360"
+                y1="172"
+                x2="360"
+                y2="190"
+                stroke="currentColor"
+                stroke-opacity="0.5"
+                stroke-width="2"
+              />
+              <circle
+                cx="420"
+                cy="150"
+                r="22"
+                fill="none"
+                stroke="var(--ui-primary)"
+                stroke-width="2"
+              />
+              <line
+                x1="420"
+                y1="133"
+                x2="420"
+                y2="167"
+                stroke="var(--ui-primary)"
+                stroke-width="2"
+              />
+              <polygon
+                points="420,133 414,144 426,144"
+                fill="var(--ui-primary)"
+              />
+              <line
+                x1="420"
+                y1="110"
+                x2="420"
+                y2="128"
+                stroke="currentColor"
+                stroke-opacity="0.5"
+                stroke-width="2"
+              />
+              <line
+                x1="420"
+                y1="172"
+                x2="420"
+                y2="190"
+                stroke="currentColor"
+                stroke-opacity="0.5"
+                stroke-width="2"
+              />
+              <text
+                x="200"
+                y="44"
+                font-size="11"
+                font-weight="600"
+                fill="currentColor"
+              >D_R</text>
+              <text
+                x="204"
+                y="56"
+                font-size="9"
+                fill="currentColor"
+                opacity="0.75"
+              >I_DC {{ formatCurrent(op.iDC) }}</text>
+              <text
+                x="200"
+                y="204"
+                font-size="11"
+                font-weight="600"
+                fill="currentColor"
+              >D_F</text>
+              <text
+                x="204"
+                y="216"
+                font-size="9"
+                fill="currentColor"
+                opacity="0.75"
+              >I_DE {{ formatCurrent(op.iDE) }}</text>
+              <text
+                x="306"
+                y="138"
+                font-size="10"
+                fill="var(--ui-primary)"
+              >I_F</text>
+              <text
+                x="306"
+                y="152"
+                font-size="9"
+                fill="currentColor"
+                opacity="0.75"
+              >{{ formatCurrent(op.iF) }}</text>
+              <text
+                x="438"
+                y="138"
+                font-size="10"
+                fill="var(--ui-primary)"
+              >I_R</text>
+              <text
+                x="438"
+                y="152"
+                font-size="9"
+                fill="currentColor"
+                opacity="0.75"
+              >{{ formatCurrent(op.iR) }}</text>
+              <text
+                x="132"
+                y="34"
+                font-size="10"
+                fill="currentColor"
+                opacity="0.75"
+              >V_BC {{ formatNum(vbc, 2) }} V</text>
+              <text
+                x="132"
+                y="258"
+                font-size="10"
+                fill="currentColor"
+                opacity="0.75"
+              >V_BE {{ formatNum(vbe, 2) }} V</text>
+              <text
+                x="55"
+                y="138"
+                font-size="10"
+                fill="var(--ui-primary)"
+              >I_B {{ formatCurrent(op.ib) }}</text>
+              <text
+                x="388"
+                y="24"
+                font-size="10"
+                fill="var(--ui-primary)"
+              >I_C {{ formatCurrent(op.ic) }}</text>
+              <text
+                x="388"
+                y="282"
+                font-size="10"
+                fill="var(--ui-primary)"
+              >I_E {{ formatCurrent(op.ie) }}</text>
             </svg>
           </UCard>
         </UCard>
         <UCard :ui="{ body: 'space-y-2' }">
           <UCard :ui="{ body: 'flex items-center justify-between p-2' }">
-            <UBadge color="neutral" variant="soft" label="Regione" />
-            <UBadge :color="op.color" variant="subtle" :label="op.region" />
+            <UBadge
+              color="neutral"
+              variant="soft"
+              label="Regione"
+            />
+            <UBadge
+              :color="op.color"
+              variant="subtle"
+              :label="op.region"
+            />
           </UCard>
           <UCard :ui="{ body: 'space-y-2 text-sm' }">
-            <UCard :ui="{ body: 'flex justify-between p-2' }"><UBadge color="neutral" variant="soft" label="V_CE" /><UBadge color="primary" variant="subtle" :label="`${formatNum(op.vce, 4)} V`" class="font-mono" /></UCard>
-            <UCard :ui="{ body: 'flex justify-between p-2' }"><UBadge color="neutral" variant="soft" label="α_F" /><UBadge color="primary" variant="subtle" :label="formatNum(op.alphaF, 5)" class="font-mono" /></UCard>
-            <UCard :ui="{ body: 'flex justify-between p-2' }"><UBadge color="neutral" variant="soft" label="α_R" /><UBadge color="primary" variant="subtle" :label="formatNum(op.alphaR, 5)" class="font-mono" /></UCard>
-            <UCard :ui="{ body: 'flex justify-between p-2' }"><UBadge color="neutral" variant="soft" label="KCL" /><UBadge :color="op.kclError < 1e-9 ? 'success' : 'warning'" variant="subtle" :label="formatPercent(op.kclError * 100)" class="font-mono" /></UCard>
+            <UCard :ui="{ body: 'flex justify-between p-2' }">
+              <UBadge
+                color="neutral"
+                variant="soft"
+                label="V_CE"
+              /><UBadge
+                color="primary"
+                variant="subtle"
+                :label="`${formatNum(op.vce, 4)} V`"
+                class="font-mono"
+              />
+            </UCard>
+            <UCard :ui="{ body: 'flex justify-between p-2' }">
+              <UBadge
+                color="neutral"
+                variant="soft"
+                label="α_F"
+              /><UBadge
+                color="primary"
+                variant="subtle"
+                :label="formatNum(op.alphaF, 5)"
+                class="font-mono"
+              />
+            </UCard>
+            <UCard :ui="{ body: 'flex justify-between p-2' }">
+              <UBadge
+                color="neutral"
+                variant="soft"
+                label="α_R"
+              /><UBadge
+                color="primary"
+                variant="subtle"
+                :label="formatNum(op.alphaR, 5)"
+                class="font-mono"
+              />
+            </UCard>
+            <UCard :ui="{ body: 'flex justify-between p-2' }">
+              <UBadge
+                color="neutral"
+                variant="soft"
+                label="KCL"
+              /><UBadge
+                :color="op.kclError < 1e-9 ? 'success' : 'warning'"
+                variant="subtle"
+                :label="formatPercent(op.kclError * 100)"
+                class="font-mono"
+              />
+            </UCard>
           </UCard>
-          <UAlert color="neutral" variant="soft" description="Equivalent circuit: due diodi (I_F/α_F, I_R/α_R) e due generatori controllati (I_F, I_R)." />
+          <UAlert
+            color="neutral"
+            variant="soft"
+            description="Equivalent circuit: due diodi (I_F/α_F, I_R/α_R) e due generatori controllati (I_F, I_R)."
+          />
         </UCard>
       </UPageGrid>
     </template>
 
     <template #parameters>
       <UPageGrid class="lg:grid-cols-3">
-        <UCard class="lg:col-span-2" :ui="{ body: 'space-y-4' }">
-          <UPageHeader :ui="{ root: 'border-b-0 py-0' }">
-            <template #headline>
-              <UBadge color="neutral" variant="soft" size="xs" label="Valori impostati" class="tracking-wide uppercase" />
-            </template>
-            <template #links>
-              <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" label="Ripristina" @click="resetDefaults" />
-            </template>
-          </UPageHeader>
+        <UCard
+          class="lg:col-span-2"
+          :ui="{ body: 'space-y-4' }"
+        >
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-muted">Valori impostati</span>
+            <UButton
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              icon="i-lucide-rotate-ccw"
+              label="Ripristina"
+              @click="resetDefaults"
+            />
+          </div>
           <UFormField label="Preset regione operativa">
             <div class="flex flex-wrap gap-2">
-              <UButton v-for="preset in PRESETS" :key="preset.key" size="xs" :color="preset.color" variant="subtle" :label="preset.label" @click="applyPreset(preset)" />
+              <UButton
+                v-for="preset in PRESETS"
+                :key="preset.key"
+                size="xs"
+                :color="preset.color"
+                variant="subtle"
+                :label="preset.label"
+                @click="applyPreset(preset)"
+              />
             </div>
           </UFormField>
           <UPageGrid class="sm:grid-cols-2 gap-x-6 gap-y-4">
-            <UFormField label="V_BE" :hint="`${vbe.toFixed(3)} V`" class="sm:col-span-2">
-              <USlider v-model="vbe" :min="-0.2" :max="0.9" :step="0.005" />
+            <UFormField
+              label="V_BE"
+              :hint="`${vbe.toFixed(3)} V`"
+              class="sm:col-span-2"
+            >
+              <USlider
+                v-model="vbe"
+                :min="-0.2"
+                :max="0.9"
+                :step="0.005"
+              />
             </UFormField>
-            <UFormField label="V_BC" :hint="`${vbc.toFixed(3)} V`" class="sm:col-span-2">
-              <USlider v-model="vbc" :min="-5" :max="0.8" :step="0.01" />
+            <UFormField
+              label="V_BC"
+              :hint="`${vbc.toFixed(3)} V`"
+              class="sm:col-span-2"
+            >
+              <USlider
+                v-model="vbc"
+                :min="-5"
+                :max="0.8"
+                :step="0.01"
+              />
             </UFormField>
-            <UFormField label="I_SF (A)" size="sm">
+            <UFormField
+              label="I_SF (A)"
+              size="sm"
+            >
               <div class="flex items-center gap-1">
-                <UInput v-model.number="isat" type="number" step="any" min="1e-30" size="sm" class="min-w-0 flex-1" @change="normalizeInputs" />
-                <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" title="Ripristina I_SF" @click="isat = DEFAULTS.isat" />
+                <UInput
+                  v-model.number="isat"
+                  type="number"
+                  step="any"
+                  min="1e-30"
+                  size="sm"
+                  class="min-w-0 flex-1"
+                  @change="normalizeInputs"
+                />
+                <UButton
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  icon="i-lucide-rotate-ccw"
+                  title="Ripristina I_SF"
+                  @click="isat = DEFAULTS.isat"
+                />
               </div>
             </UFormField>
-            <UFormField label="I_SR (A)" size="sm">
+            <UFormField
+              label="I_SR (A)"
+              size="sm"
+            >
               <div class="flex items-center gap-1">
-                <UInput v-model.number="isatR" type="number" step="any" min="1e-30" size="sm" class="min-w-0 flex-1" @change="normalizeInputs" />
-                <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" title="Ripristina I_SR" @click="isatR = DEFAULTS.isatR" />
+                <UInput
+                  v-model.number="isatR"
+                  type="number"
+                  step="any"
+                  min="1e-30"
+                  size="sm"
+                  class="min-w-0 flex-1"
+                  @change="normalizeInputs"
+                />
+                <UButton
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  icon="i-lucide-rotate-ccw"
+                  title="Ripristina I_SR"
+                  @click="isatR = DEFAULTS.isatR"
+                />
               </div>
             </UFormField>
-            <UFormField label="V_T (V)" size="sm">
+            <UFormField
+              label="V_T (V)"
+              size="sm"
+            >
               <div class="flex items-center gap-1">
-                <UInput v-model.number="vt" type="number" step="0.0001" min="1e-6" size="sm" class="min-w-0 flex-1" @change="normalizeInputs" />
-                <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" title="Ripristina V_T" @click="vt = DEFAULTS.vt" />
+                <UInput
+                  v-model.number="vt"
+                  type="number"
+                  step="0.0001"
+                  min="1e-6"
+                  size="sm"
+                  class="min-w-0 flex-1"
+                  @change="normalizeInputs"
+                />
+                <UButton
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  icon="i-lucide-rotate-ccw"
+                  title="Ripristina V_T"
+                  @click="vt = DEFAULTS.vt"
+                />
               </div>
             </UFormField>
-            <UFormField label="β_F" size="sm">
+            <UFormField
+              label="β_F"
+              size="sm"
+            >
               <div class="flex items-center gap-1">
-                <UInput v-model.number="betaF" type="number" step="1" min="0.001" size="sm" class="min-w-0 flex-1" @change="normalizeInputs" />
-                <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" title="Ripristina β_F" @click="betaF = DEFAULTS.betaF" />
+                <UInput
+                  v-model.number="betaF"
+                  type="number"
+                  step="1"
+                  min="0.001"
+                  size="sm"
+                  class="min-w-0 flex-1"
+                  @change="normalizeInputs"
+                />
+                <UButton
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  icon="i-lucide-rotate-ccw"
+                  title="Ripristina β_F"
+                  @click="betaF = DEFAULTS.betaF"
+                />
               </div>
             </UFormField>
-            <UFormField label="β_R" size="sm">
+            <UFormField
+              label="β_R"
+              size="sm"
+            >
               <div class="flex items-center gap-1">
-                <UInput v-model.number="betaR" type="number" step="0.1" min="0.001" size="sm" class="min-w-0 flex-1" @change="normalizeInputs" />
-                <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" title="Ripristina β_R" @click="betaR = DEFAULTS.betaR" />
+                <UInput
+                  v-model.number="betaR"
+                  type="number"
+                  step="0.1"
+                  min="0.001"
+                  size="sm"
+                  class="min-w-0 flex-1"
+                  @change="normalizeInputs"
+                />
+                <UButton
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  icon="i-lucide-rotate-ccw"
+                  title="Ripristina β_R"
+                  @click="betaR = DEFAULTS.betaR"
+                />
               </div>
             </UFormField>
           </UPageGrid>
-          <UAlert v-if="hasInvalidInput" color="warning" variant="subtle" title="Valori non validi" description="Sono stati corretti automaticamente valori negativi, nulli o non numerici. I calcoli usano i limiti minimi ammessi." />
+          <UAlert
+            v-if="hasInvalidInput"
+            color="warning"
+            variant="subtle"
+            title="Valori non validi"
+            description="Sono stati corretti automaticamente valori negativi, nulli o non numerici. I calcoli usano i limiti minimi ammessi."
+          />
           <div class="flex flex-wrap gap-2">
-            <UButton size="xs" color="neutral" variant="outline" icon="i-lucide-crosshair" label="Blocca punto di lavoro" @click="captureSnapshot" />
-            <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" label="Rilascia confronto" :disabled="!snapshot" @click="snapshot = null" />
-            <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-upload" label="Ripristina confronto" :disabled="!snapshot" @click="restoreSnapshot" />
-            <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-download" label="Esporta CSV" @click="downloadCSV" />
+            <UButton
+              size="xs"
+              color="neutral"
+              variant="outline"
+              icon="i-lucide-crosshair"
+              label="Blocca punto di lavoro"
+              @click="captureSnapshot"
+            />
+            <UButton
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              icon="i-lucide-rotate-ccw"
+              label="Rilascia confronto"
+              :disabled="!snapshot"
+              @click="snapshot = null"
+            />
+            <UButton
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              icon="i-lucide-upload"
+              label="Ripristina confronto"
+              :disabled="!snapshot"
+              @click="restoreSnapshot"
+            />
+            <UButton
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              icon="i-lucide-download"
+              label="Esporta CSV"
+              @click="downloadCSV"
+            />
           </div>
         </UCard>
         <UCard :ui="{ body: 'space-y-2' }">
-          <UBadge color="neutral" variant="soft" size="xs" label="Valori calcolati" class="tracking-wide uppercase w-fit mb-1" />
-          <UCard :ui="{ body: 'flex justify-between p-2 text-sm' }"><UBadge color="neutral" variant="soft" label="I_C" /><UBadge color="primary" variant="subtle" :label="formatCurrent(op.ic)" class="font-mono font-medium" /></UCard>
-          <UCard :ui="{ body: 'flex justify-between p-2 text-sm' }"><UBadge color="neutral" variant="soft" label="I_B" /><UBadge color="primary" variant="subtle" :label="formatCurrent(op.ib)" class="font-mono font-medium" /></UCard>
-          <UCard :ui="{ body: 'flex justify-between p-2 text-sm' }"><UBadge color="neutral" variant="soft" label="I_E" /><UBadge color="primary" variant="subtle" :label="formatCurrent(op.ie)" class="font-mono font-medium" /></UCard>
-          <UCard :ui="{ body: 'flex justify-between p-2 text-sm' }"><UBadge color="neutral" variant="soft" label="I_F" /><UBadge color="primary" variant="subtle" :label="formatCurrent(op.iF)" class="font-mono" /></UCard>
-          <UCard :ui="{ body: 'flex justify-between p-2 text-sm' }"><UBadge color="neutral" variant="soft" label="I_R" /><UBadge color="primary" variant="subtle" :label="formatCurrent(op.iR)" class="font-mono" /></UCard>
-          <UCard :ui="{ body: 'flex justify-between p-2 text-sm' }"><UBadge color="neutral" variant="soft" label="Errore KCL" /><UBadge :color="op.kclError < 1e-9 ? 'success' : 'warning'" variant="subtle" :label="formatPercent(op.kclError * 100)" class="font-mono" /></UCard>
+          <span class="text-xs text-muted">Valori calcolati</span>
+          <UCard :ui="{ body: 'flex justify-between p-2 text-sm' }">
+            <UBadge
+              color="neutral"
+              variant="soft"
+              label="I_C"
+            /><UBadge
+              color="primary"
+              variant="subtle"
+              :label="formatCurrent(op.ic)"
+              class="font-mono font-medium"
+            />
+          </UCard>
+          <UCard :ui="{ body: 'flex justify-between p-2 text-sm' }">
+            <UBadge
+              color="neutral"
+              variant="soft"
+              label="I_B"
+            /><UBadge
+              color="primary"
+              variant="subtle"
+              :label="formatCurrent(op.ib)"
+              class="font-mono font-medium"
+            />
+          </UCard>
+          <UCard :ui="{ body: 'flex justify-between p-2 text-sm' }">
+            <UBadge
+              color="neutral"
+              variant="soft"
+              label="I_E"
+            /><UBadge
+              color="primary"
+              variant="subtle"
+              :label="formatCurrent(op.ie)"
+              class="font-mono font-medium"
+            />
+          </UCard>
+          <UCard :ui="{ body: 'flex justify-between p-2 text-sm' }">
+            <UBadge
+              color="neutral"
+              variant="soft"
+              label="I_F"
+            /><UBadge
+              color="primary"
+              variant="subtle"
+              :label="formatCurrent(op.iF)"
+              class="font-mono"
+            />
+          </UCard>
+          <UCard :ui="{ body: 'flex justify-between p-2 text-sm' }">
+            <UBadge
+              color="neutral"
+              variant="soft"
+              label="I_R"
+            /><UBadge
+              color="primary"
+              variant="subtle"
+              :label="formatCurrent(op.iR)"
+              class="font-mono"
+            />
+          </UCard>
+          <UCard :ui="{ body: 'flex justify-between p-2 text-sm' }">
+            <UBadge
+              color="neutral"
+              variant="soft"
+              label="Errore KCL"
+            /><UBadge
+              :color="op.kclError < 1e-9 ? 'success' : 'warning'"
+              variant="subtle"
+              :label="formatPercent(op.kclError * 100)"
+              class="font-mono"
+            />
+          </UCard>
         </UCard>
       </UPageGrid>
     </template>
 
     <template #results>
-      <UCard class="lg:col-span-2" :ui="{ body: 'p-3 sm:p-4 space-y-2' }">
-        <UBadge color="neutral" variant="soft" size="xs" label="Tabella riepilogativa" class="tracking-wide uppercase w-fit" />
+      <UCard
+        class="lg:col-span-2"
+        :ui="{ body: 'p-3 sm:p-4 space-y-2' }"
+      >
+        <span class="text-xs text-muted">Tabella riepilogativa</span>
         <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead><tr class="text-left text-xs uppercase text-muted"><th class="py-1 pr-3">Grandezza</th><th class="py-1 pr-3">Valore</th><th class="py-1">Interpretazione</th></tr></thead>
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="text-left text-xs uppercase text-muted">
+                <th class="py-1 pr-3">
+                  Grandezza
+                </th><th class="py-1 pr-3">
+                  Valore
+                </th><th class="py-1">
+                  Interpretazione
+                </th>
+              </tr>
+            </thead>
             <tbody>
-              <tr v-for="row in summaryRows" :key="row.label" class="border-t border-muted/40">
-                <td class="py-1 pr-3 font-medium">{{ row.label }}</td>
-                <td class="py-1 pr-3 font-mono">{{ row.value }}</td>
-                <td class="py-1 text-muted">{{ row.note }}</td>
+              <tr
+                v-for="row in summaryRows"
+                :key="row.label"
+                class="border-t border-muted/40"
+              >
+                <td class="py-1 pr-3 font-medium">
+                  {{ row.label }}
+                </td>
+                <td class="py-1 pr-3 font-mono">
+                  {{ row.value }}
+                </td>
+                <td class="py-1 text-muted">
+                  {{ row.note }}
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <UAlert v-if="op.region === 'Attiva diretta'" color="success" variant="subtle" :description="`Interpretazione: BE diretta e BC inversa, il collettore raccoglie quasi tutta la corrente di emettitore. Modello semplificato: ${formatCurrent(op.icSimple)} (scarto ${formatPercent(op.simpleError)}).`" />
-        <UAlert v-else-if="op.region === 'Saturazione'" color="warning" variant="subtle" description="Interpretazione: entrambe le giunzioni sono dirette, il termine inverso I_R non è trascurabile e V_CE è piccolo." />
-        <UAlert v-else-if="op.region === 'Attiva inversa'" color="info" variant="subtle" description="Interpretazione: BC diretta e BE inversa, il trasporto inverso domina e il guadagno è molto minore (β_R)." />
-        <UAlert v-else color="neutral" variant="subtle" description="Interpretazione: entrambe le giunzioni sono inverse, restano solo correnti di fuga dell'ordine di I_S." />
-        <UAlert v-if="snapshot" color="primary" variant="subtle" :description="`Confronto attivo: A = ${formatNum(snapshot.vbe, 3)} V / ${formatCurrent(snapshotOp?.ic ?? 0)} · B = ${formatNum(params.vbe, 3)} V / ${formatCurrent(op.ic)}.`" />
+        <UAlert
+          v-if="op.region === 'Attiva diretta'"
+          color="success"
+          variant="subtle"
+          :description="`Interpretazione: BE diretta e BC inversa, il collettore raccoglie quasi tutta la corrente di emettitore. Modello semplificato: ${formatCurrent(op.icSimple)} (scarto ${formatPercent(op.simpleError)}).`"
+        />
+        <UAlert
+          v-else-if="op.region === 'Saturazione'"
+          color="warning"
+          variant="subtle"
+          description="Interpretazione: entrambe le giunzioni sono dirette, il termine inverso I_R non è trascurabile e V_CE è piccolo."
+        />
+        <UAlert
+          v-else-if="op.region === 'Attiva inversa'"
+          color="info"
+          variant="subtle"
+          description="Interpretazione: BC diretta e BE inversa, il trasporto inverso domina e il guadagno è molto minore (β_R)."
+        />
+        <UAlert
+          v-else
+          color="neutral"
+          variant="subtle"
+          description="Interpretazione: entrambe le giunzioni sono inverse, restano solo correnti di fuga dell'ordine di I_S."
+        />
+        <UAlert
+          v-if="snapshot"
+          color="primary"
+          variant="subtle"
+          :description="`Confronto attivo: A = ${formatNum(snapshot.vbe, 3)} V / ${formatCurrent(snapshotOp?.ic ?? 0)} · B = ${formatNum(params.vbe, 3)} V / ${formatCurrent(op.ic)}.`"
+        />
       </UCard>
 
       <UPageGrid class="lg:col-span-2 sm:grid-cols-2 gap-4">
         <UCard :ui="{ body: 'p-3 sm:p-4 space-y-2' }">
-          <UPageHeader title="Caratteristica di trasferimento I_C–V_BE" :description="`V_BC = ${formatNum(vbc, 2)} V (parametro impostato)`" :ui="{ root: 'border-b-0 py-0', title: 'text-base font-medium text-highlighted', description: 'text-xs text-muted' }">
+          <UPageHeader
+            title="Caratteristica di trasferimento I_C–V_BE"
+            :description="`V_BC = ${formatNum(vbc, 2)} V (parametro impostato)`"
+            :ui="{ root: 'border-b-0 py-0', title: 'text-sm font-medium text-highlighted', description: 'text-xs text-muted' }"
+          >
             <template #links>
-              <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-maximize-2" title="Ingrandisci" @click="expandedChart = expandedChart === 'transfer' ? null : 'transfer'" />
-              <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-image-down" title="Scarica PNG" @click="downloadPNG(transferSvg, 'ebers-moll-transfer.png')" />
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-maximize-2"
+                title="Ingrandisci"
+                @click="expandedChart = expandedChart === 'transfer' ? null : 'transfer'"
+              />
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-image-down"
+                title="Scarica PNG"
+                @click="downloadPNG(transferSvg, 'ebers-moll-transfer.png')"
+              />
             </template>
           </UPageHeader>
-          <div :class="expandedChart === 'transfer' ? 'fixed inset-0 z-50 flex items-center justify-center bg-carbon-950/85 p-4' : ''" @click.self="expandedChart = null">
+          <div
+            :class="expandedChart === 'transfer' ? 'fixed inset-0 z-50 flex items-center justify-center bg-carbon-950/85 p-4' : ''"
+            @click.self="expandedChart = null"
+          >
             <div :class="expandedChart === 'transfer' ? 'w-full max-w-5xl rounded-lg bg-elevated p-4' : ''">
-              <div v-if="expandedChart === 'transfer'" class="mb-2 flex justify-end">
-                <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-x" label="Chiudi" @click="expandedChart = null" />
+              <div
+                v-if="expandedChart === 'transfer'"
+                class="mb-2 flex justify-end"
+              >
+                <UButton
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  icon="i-lucide-x"
+                  label="Chiudi"
+                  @click="expandedChart = null"
+                />
               </div>
-              <svg ref="transferSvg" :viewBox="`0 0 ${transferChart.W} ${transferChart.H}`" class="w-full h-auto" @mousemove="onTransferMove" @mouseleave="hover = null">
-                <line :x1="transferChart.pad.l" :y1="transferChart.H - transferChart.pad.b" :x2="transferChart.W - transferChart.pad.r" :y2="transferChart.H - transferChart.pad.b" stroke="currentColor" stroke-opacity="0.35" />
-                <line :x1="transferChart.pad.l" :y1="transferChart.pad.t" :x2="transferChart.pad.l" :y2="transferChart.H - transferChart.pad.b" stroke="currentColor" stroke-opacity="0.35" />
-                <g v-for="(t, i) in transferChart.yTicks" :key="'yt' + i">
-                  <line :x1="transferChart.pad.l" :x2="transferChart.W - transferChart.pad.r" :y1="t.y" :y2="t.y" stroke="currentColor" stroke-opacity="0.12" />
-                  <text :x="transferChart.pad.l - 6" :y="t.y + 3" text-anchor="end" font-size="9" fill="currentColor" opacity="0.7">{{ t.label }}</text>
+              <svg
+                ref="transferSvg"
+                :viewBox="`0 0 ${transferChart.W} ${transferChart.H}`"
+                class="w-full h-auto"
+                @mousemove="onTransferMove"
+                @mouseleave="hover = null"
+              >
+                <line
+                  :x1="transferChart.pad.l"
+                  :y1="transferChart.H - transferChart.pad.b"
+                  :x2="transferChart.W - transferChart.pad.r"
+                  :y2="transferChart.H - transferChart.pad.b"
+                  stroke="currentColor"
+                  stroke-opacity="0.35"
+                />
+                <line
+                  :x1="transferChart.pad.l"
+                  :y1="transferChart.pad.t"
+                  :x2="transferChart.pad.l"
+                  :y2="transferChart.H - transferChart.pad.b"
+                  stroke="currentColor"
+                  stroke-opacity="0.35"
+                />
+                <g
+                  v-for="(t, i) in transferChart.yTicks"
+                  :key="'yt' + i"
+                >
+                  <line
+                    :x1="transferChart.pad.l"
+                    :x2="transferChart.W - transferChart.pad.r"
+                    :y1="t.y"
+                    :y2="t.y"
+                    stroke="currentColor"
+                    stroke-opacity="0.12"
+                  />
+                  <text
+                    :x="transferChart.pad.l - 6"
+                    :y="t.y + 3"
+                    text-anchor="end"
+                    font-size="9"
+                    fill="currentColor"
+                    opacity="0.7"
+                  >{{ t.label }}</text>
                 </g>
-                <g v-for="(t, i) in transferChart.xTicks" :key="'xt' + i">
-                  <line :x1="t.x" :x2="t.x" :y1="transferChart.pad.t" :y2="transferChart.H - transferChart.pad.b" stroke="currentColor" stroke-opacity="0.08" />
-                  <text :x="t.x" :y="transferChart.H - transferChart.pad.b + 14" text-anchor="middle" font-size="9" fill="currentColor" opacity="0.7">{{ formatNum(t.v, 2) }}</text>
+                <g
+                  v-for="(t, i) in transferChart.xTicks"
+                  :key="'xt' + i"
+                >
+                  <line
+                    :x1="t.x"
+                    :x2="t.x"
+                    :y1="transferChart.pad.t"
+                    :y2="transferChart.H - transferChart.pad.b"
+                    stroke="currentColor"
+                    stroke-opacity="0.08"
+                  />
+                  <text
+                    :x="t.x"
+                    :y="transferChart.H - transferChart.pad.b + 14"
+                    text-anchor="middle"
+                    font-size="9"
+                    fill="currentColor"
+                    opacity="0.7"
+                  >{{ formatNum(t.v, 2) }}</text>
                 </g>
-                <path :d="transferChart.path" fill="none" stroke="var(--ui-primary)" stroke-width="2" />
-                <line :x1="transferChart.opX" :x2="transferChart.opX" :y1="transferChart.opY" :y2="transferChart.H - transferChart.pad.b" stroke="var(--ui-primary)" stroke-opacity="0.5" stroke-width="1" stroke-dasharray="4 4" />
-                <line :x1="transferChart.pad.l" :x2="transferChart.opX" :y1="transferChart.opY" :y2="transferChart.opY" stroke="var(--ui-primary)" stroke-opacity="0.5" stroke-width="1" stroke-dasharray="4 4" />
-                <circle :cx="transferChart.opX" :cy="transferChart.opY" r="5" fill="var(--ui-primary)" stroke="white" stroke-width="1.5" />
-                <circle v-if="transferChart.snapX !== null && transferChart.snapY !== null" :cx="transferChart.snapX" :cy="transferChart.snapY" r="5" fill="none" stroke="#38bdf8" stroke-width="2" />
+                <path
+                  :d="transferChart.path"
+                  fill="none"
+                  stroke="var(--ui-primary)"
+                  stroke-width="2"
+                />
+                <line
+                  :x1="transferChart.opX"
+                  :x2="transferChart.opX"
+                  :y1="transferChart.opY"
+                  :y2="transferChart.H - transferChart.pad.b"
+                  stroke="var(--ui-primary)"
+                  stroke-opacity="0.5"
+                  stroke-width="1"
+                  stroke-dasharray="4 4"
+                />
+                <line
+                  :x1="transferChart.pad.l"
+                  :x2="transferChart.opX"
+                  :y1="transferChart.opY"
+                  :y2="transferChart.opY"
+                  stroke="var(--ui-primary)"
+                  stroke-opacity="0.5"
+                  stroke-width="1"
+                  stroke-dasharray="4 4"
+                />
+                <circle
+                  :cx="transferChart.opX"
+                  :cy="transferChart.opY"
+                  r="5"
+                  fill="var(--ui-primary)"
+                  stroke="white"
+                  stroke-width="1.5"
+                />
+                <circle
+                  v-if="transferChart.snapX !== null && transferChart.snapY !== null"
+                  :cx="transferChart.snapX"
+                  :cy="transferChart.snapY"
+                  r="5"
+                  fill="none"
+                  stroke="#38bdf8"
+                  stroke-width="2"
+                />
                 <g v-if="hover && hover.chart === 'transfer'">
-                  <line :x1="hover.x" :x2="hover.x" :y1="transferChart.pad.t" :y2="transferChart.H - transferChart.pad.b" stroke="currentColor" stroke-opacity="0.35" stroke-dasharray="3 3" />
-                  <rect :x="hover.boxX" :y="hover.boxY" width="126" :height="hover.lines.length * 15 + 8" rx="3" fill="var(--ui-bg)" stroke="currentColor" stroke-opacity="0.3" />
-                  <text v-for="(line, i) in hover.lines" :key="i" :x="hover.boxX + 6" :y="hover.boxY + 14 + i * 15" font-size="9" fill="currentColor">{{ line }}</text>
+                  <line
+                    :x1="hover.x"
+                    :x2="hover.x"
+                    :y1="transferChart.pad.t"
+                    :y2="transferChart.H - transferChart.pad.b"
+                    stroke="currentColor"
+                    stroke-opacity="0.35"
+                    stroke-dasharray="3 3"
+                  />
+                  <rect
+                    :x="hover.boxX"
+                    :y="hover.boxY"
+                    width="126"
+                    :height="hover.lines.length * 15 + 8"
+                    rx="3"
+                    fill="var(--ui-bg)"
+                    stroke="currentColor"
+                    stroke-opacity="0.3"
+                  />
+                  <text
+                    v-for="(line, i) in hover.lines"
+                    :key="i"
+                    :x="hover.boxX + 6"
+                    :y="hover.boxY + 14 + i * 15"
+                    font-size="9"
+                    fill="currentColor"
+                  >{{ line }}</text>
                 </g>
-                <text :x="transferChart.W / 2" :y="transferChart.H - 4" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.7">V_BE (V)</text>
-                <text :x="12" :y="transferChart.H / 2" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.7" transform="rotate(-90 12 140)">I_C</text>
+                <text
+                  :x="transferChart.W / 2"
+                  :y="transferChart.H - 4"
+                  text-anchor="middle"
+                  font-size="10"
+                  fill="currentColor"
+                  opacity="0.7"
+                >V_BE (V)</text>
+                <text
+                  :x="12"
+                  :y="transferChart.H / 2"
+                  text-anchor="middle"
+                  font-size="10"
+                  fill="currentColor"
+                  opacity="0.7"
+                  transform="rotate(-90 12 140)"
+                >I_C</text>
               </svg>
             </div>
           </div>
         </UCard>
 
         <UCard :ui="{ body: 'p-3 sm:p-4 space-y-2' }">
-          <UPageHeader title="Caratteristiche di uscita I_C–V_CE" description="Famiglia di curve: seleziona i livelli di V_BE" :ui="{ root: 'border-b-0 py-0', title: 'text-base font-medium text-highlighted', description: 'text-xs text-muted' }">
+          <UPageHeader
+            title="Caratteristiche di uscita I_C–V_CE"
+            description="Famiglia di curve: seleziona i livelli di V_BE"
+            :ui="{ root: 'border-b-0 py-0', title: 'text-sm font-medium text-highlighted', description: 'text-xs text-muted' }"
+          >
             <template #links>
-              <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-maximize-2" title="Ingrandisci" @click="expandedChart = expandedChart === 'output' ? null : 'output'" />
-              <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-image-down" title="Scarica PNG" @click="downloadPNG(outputSvg, 'ebers-moll-output.png')" />
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-maximize-2"
+                title="Ingrandisci"
+                @click="expandedChart = expandedChart === 'output' ? null : 'output'"
+              />
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-image-down"
+                title="Scarica PNG"
+                @click="downloadPNG(outputSvg, 'ebers-moll-output.png')"
+              />
             </template>
           </UPageHeader>
           <div class="flex flex-wrap gap-1">
-            <UButton v-for="(level, i) in LEVELS" :key="level" size="xs" :color="selectedLevels.includes(level) ? 'primary' : 'neutral'" :variant="selectedLevels.includes(level) ? 'subtle' : 'outline'" :label="`${formatNum(level, 2)} V`" @click="toggleLevel(level)" />
+            <UButton
+              v-for="level in LEVELS"
+              :key="level"
+              size="xs"
+              :color="selectedLevels.includes(level) ? 'primary' : 'neutral'"
+              :variant="selectedLevels.includes(level) ? 'subtle' : 'outline'"
+              :label="`${formatNum(level, 2)} V`"
+              @click="toggleLevel(level)"
+            />
           </div>
-          <div :class="expandedChart === 'output' ? 'fixed inset-0 z-50 flex items-center justify-center bg-carbon-950/85 p-4' : ''" @click.self="expandedChart = null">
+          <div
+            :class="expandedChart === 'output' ? 'fixed inset-0 z-50 flex items-center justify-center bg-carbon-950/85 p-4' : ''"
+            @click.self="expandedChart = null"
+          >
             <div :class="expandedChart === 'output' ? 'w-full max-w-5xl rounded-lg bg-elevated p-4' : ''">
-              <div v-if="expandedChart === 'output'" class="mb-2 flex justify-end">
-                <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-x" label="Chiudi" @click="expandedChart = null" />
+              <div
+                v-if="expandedChart === 'output'"
+                class="mb-2 flex justify-end"
+              >
+                <UButton
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  icon="i-lucide-x"
+                  label="Chiudi"
+                  @click="expandedChart = null"
+                />
               </div>
-              <svg ref="outputSvg" :viewBox="`0 0 ${outputChart.W} ${outputChart.H}`" class="w-full h-auto" @mousemove="onOutputMove" @mouseleave="hover = null">
-                <rect :x="outputChart.pad.l" :y="outputChart.pad.t" :width="outputChart.satEdge - outputChart.pad.l" :height="outputChart.H - outputChart.pad.t - outputChart.pad.b" fill="#f59e0b" fill-opacity="0.09" />
-                <rect :x="outputChart.satEdge" :y="outputChart.pad.t" :width="outputChart.W - outputChart.pad.r - outputChart.satEdge" :height="outputChart.H - outputChart.pad.t - outputChart.pad.b" fill="#22c55e" fill-opacity="0.05" />
-                <text :x="(outputChart.pad.l + outputChart.satEdge) / 2" :y="outputChart.pad.t + 12" text-anchor="middle" font-size="9" fill="#f59e0b">saturazione</text>
-                <text :x="(outputChart.satEdge + outputChart.W - outputChart.pad.r) / 2" :y="outputChart.pad.t + 12" text-anchor="middle" font-size="9" fill="#22c55e">attiva diretta</text>
-                <line :x1="outputChart.pad.l" :y1="outputChart.H - outputChart.pad.b" :x2="outputChart.W - outputChart.pad.r" :y2="outputChart.H - outputChart.pad.b" stroke="currentColor" stroke-opacity="0.35" />
-                <line :x1="outputChart.pad.l" :y1="outputChart.pad.t" :x2="outputChart.pad.l" :y2="outputChart.H - outputChart.pad.b" stroke="currentColor" stroke-opacity="0.35" />
-                <g v-for="(t, i) in outputChart.yTicks" :key="'oyt' + i">
-                  <line :x1="outputChart.pad.l" :x2="outputChart.W - outputChart.pad.r" :y1="t.y" :y2="t.y" stroke="currentColor" stroke-opacity="0.12" />
-                  <text :x="outputChart.pad.l - 6" :y="t.y + 3" text-anchor="end" font-size="9" fill="currentColor" opacity="0.7">{{ t.label }}</text>
+              <svg
+                ref="outputSvg"
+                :viewBox="`0 0 ${outputChart.W} ${outputChart.H}`"
+                class="w-full h-auto"
+                @mousemove="onOutputMove"
+                @mouseleave="hover = null"
+              >
+                <rect
+                  :x="outputChart.pad.l"
+                  :y="outputChart.pad.t"
+                  :width="outputChart.satEdge - outputChart.pad.l"
+                  :height="outputChart.H - outputChart.pad.t - outputChart.pad.b"
+                  fill="#f59e0b"
+                  fill-opacity="0.09"
+                />
+                <rect
+                  :x="outputChart.satEdge"
+                  :y="outputChart.pad.t"
+                  :width="outputChart.W - outputChart.pad.r - outputChart.satEdge"
+                  :height="outputChart.H - outputChart.pad.t - outputChart.pad.b"
+                  fill="#22c55e"
+                  fill-opacity="0.05"
+                />
+                <text
+                  :x="(outputChart.pad.l + outputChart.satEdge) / 2"
+                  :y="outputChart.pad.t + 12"
+                  text-anchor="middle"
+                  font-size="9"
+                  fill="#f59e0b"
+                >saturazione</text>
+                <text
+                  :x="(outputChart.satEdge + outputChart.W - outputChart.pad.r) / 2"
+                  :y="outputChart.pad.t + 12"
+                  text-anchor="middle"
+                  font-size="9"
+                  fill="#22c55e"
+                >attiva diretta</text>
+                <line
+                  :x1="outputChart.pad.l"
+                  :y1="outputChart.H - outputChart.pad.b"
+                  :x2="outputChart.W - outputChart.pad.r"
+                  :y2="outputChart.H - outputChart.pad.b"
+                  stroke="currentColor"
+                  stroke-opacity="0.35"
+                />
+                <line
+                  :x1="outputChart.pad.l"
+                  :y1="outputChart.pad.t"
+                  :x2="outputChart.pad.l"
+                  :y2="outputChart.H - outputChart.pad.b"
+                  stroke="currentColor"
+                  stroke-opacity="0.35"
+                />
+                <g
+                  v-for="(t, i) in outputChart.yTicks"
+                  :key="'oyt' + i"
+                >
+                  <line
+                    :x1="outputChart.pad.l"
+                    :x2="outputChart.W - outputChart.pad.r"
+                    :y1="t.y"
+                    :y2="t.y"
+                    stroke="currentColor"
+                    stroke-opacity="0.12"
+                  />
+                  <text
+                    :x="outputChart.pad.l - 6"
+                    :y="t.y + 3"
+                    text-anchor="end"
+                    font-size="9"
+                    fill="currentColor"
+                    opacity="0.7"
+                  >{{ t.label }}</text>
                 </g>
-                <g v-for="(t, i) in outputChart.xTicks" :key="'oxt' + i">
-                  <line :x1="t.x" :x2="t.x" :y1="outputChart.pad.t" :y2="outputChart.H - outputChart.pad.b" stroke="currentColor" stroke-opacity="0.08" />
-                  <text :x="t.x" :y="outputChart.H - outputChart.pad.b + 14" text-anchor="middle" font-size="9" fill="currentColor" opacity="0.7">{{ t.v }}</text>
+                <g
+                  v-for="(t, i) in outputChart.xTicks"
+                  :key="'oxt' + i"
+                >
+                  <line
+                    :x1="t.x"
+                    :x2="t.x"
+                    :y1="outputChart.pad.t"
+                    :y2="outputChart.H - outputChart.pad.b"
+                    stroke="currentColor"
+                    stroke-opacity="0.08"
+                  />
+                  <text
+                    :x="t.x"
+                    :y="outputChart.H - outputChart.pad.b + 14"
+                    text-anchor="middle"
+                    font-size="9"
+                    fill="currentColor"
+                    opacity="0.7"
+                  >{{ t.v }}</text>
                 </g>
-                <path v-for="curve in outputChart.curves" :key="curve.v" :d="curve.path" fill="none" :stroke="curve.color" stroke-width="1.8" />
-                <line :x1="outputChart.opX" :x2="outputChart.opX" :y1="outputChart.opY" :y2="outputChart.H - outputChart.pad.b" stroke="var(--ui-primary)" stroke-opacity="0.5" stroke-width="1" stroke-dasharray="4 4" />
-                <line :x1="outputChart.pad.l" :x2="outputChart.opX" :y1="outputChart.opY" :y2="outputChart.opY" stroke="var(--ui-primary)" stroke-opacity="0.5" stroke-width="1" stroke-dasharray="4 4" />
-                <circle :cx="outputChart.opX" :cy="outputChart.opY" r="5" fill="var(--ui-primary)" stroke="white" stroke-width="1.5" />
-                <circle v-if="outputChart.snapX !== null && outputChart.snapY !== null" :cx="outputChart.snapX" :cy="outputChart.snapY" r="5" fill="none" stroke="#38bdf8" stroke-width="2" />
+                <path
+                  v-for="curve in outputChart.curves"
+                  :key="curve.v"
+                  :d="curve.path"
+                  fill="none"
+                  :stroke="curve.color"
+                  stroke-width="1.8"
+                />
+                <line
+                  :x1="outputChart.opX"
+                  :x2="outputChart.opX"
+                  :y1="outputChart.opY"
+                  :y2="outputChart.H - outputChart.pad.b"
+                  stroke="var(--ui-primary)"
+                  stroke-opacity="0.5"
+                  stroke-width="1"
+                  stroke-dasharray="4 4"
+                />
+                <line
+                  :x1="outputChart.pad.l"
+                  :x2="outputChart.opX"
+                  :y1="outputChart.opY"
+                  :y2="outputChart.opY"
+                  stroke="var(--ui-primary)"
+                  stroke-opacity="0.5"
+                  stroke-width="1"
+                  stroke-dasharray="4 4"
+                />
+                <circle
+                  :cx="outputChart.opX"
+                  :cy="outputChart.opY"
+                  r="5"
+                  fill="var(--ui-primary)"
+                  stroke="white"
+                  stroke-width="1.5"
+                />
+                <circle
+                  v-if="outputChart.snapX !== null && outputChart.snapY !== null"
+                  :cx="outputChart.snapX"
+                  :cy="outputChart.snapY"
+                  r="5"
+                  fill="none"
+                  stroke="#38bdf8"
+                  stroke-width="2"
+                />
                 <g v-if="hover && hover.chart === 'output'">
-                  <rect :x="hover.boxX" :y="hover.boxY" width="126" :height="hover.lines.length * 15 + 8" rx="3" fill="var(--ui-bg)" stroke="currentColor" stroke-opacity="0.3" />
-                  <text v-for="(line, i) in hover.lines" :key="i" :x="hover.boxX + 6" :y="hover.boxY + 14 + i * 15" font-size="9" fill="currentColor">{{ line }}</text>
+                  <rect
+                    :x="hover.boxX"
+                    :y="hover.boxY"
+                    width="126"
+                    :height="hover.lines.length * 15 + 8"
+                    rx="3"
+                    fill="var(--ui-bg)"
+                    stroke="currentColor"
+                    stroke-opacity="0.3"
+                  />
+                  <text
+                    v-for="(line, i) in hover.lines"
+                    :key="i"
+                    :x="hover.boxX + 6"
+                    :y="hover.boxY + 14 + i * 15"
+                    font-size="9"
+                    fill="currentColor"
+                  >{{ line }}</text>
                 </g>
-                <g v-for="(curve, i) in outputChart.curves" :key="'leg' + curve.v">
-                  <line :x1="outputChart.W - outputChart.pad.r - 74" :x2="outputChart.W - outputChart.pad.r - 58" :y1="outputChart.pad.t + 10 + i * 14" :y2="outputChart.pad.t + 10 + i * 14" :stroke="curve.color" stroke-width="2" />
-                  <text :x="outputChart.W - outputChart.pad.r - 54" :y="outputChart.pad.t + 13 + i * 14" font-size="9" fill="currentColor" opacity="0.75">{{ formatNum(curve.v, 2) }} V</text>
+                <g
+                  v-for="(curve, i) in outputChart.curves"
+                  :key="'leg' + curve.v"
+                >
+                  <line
+                    :x1="outputChart.W - outputChart.pad.r - 74"
+                    :x2="outputChart.W - outputChart.pad.r - 58"
+                    :y1="outputChart.pad.t + 10 + i * 14"
+                    :y2="outputChart.pad.t + 10 + i * 14"
+                    :stroke="curve.color"
+                    stroke-width="2"
+                  />
+                  <text
+                    :x="outputChart.W - outputChart.pad.r - 54"
+                    :y="outputChart.pad.t + 13 + i * 14"
+                    font-size="9"
+                    fill="currentColor"
+                    opacity="0.75"
+                  >{{ formatNum(curve.v, 2) }} V</text>
                 </g>
-                <text :x="outputChart.W / 2" :y="outputChart.H - 4" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.7">V_CE (V)</text>
-                <text :x="12" :y="outputChart.H / 2" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.7" transform="rotate(-90 12 140)">I_C</text>
+                <text
+                  :x="outputChart.W / 2"
+                  :y="outputChart.H - 4"
+                  text-anchor="middle"
+                  font-size="10"
+                  fill="currentColor"
+                  opacity="0.7"
+                >V_CE (V)</text>
+                <text
+                  :x="12"
+                  :y="outputChart.H / 2"
+                  text-anchor="middle"
+                  font-size="10"
+                  fill="currentColor"
+                  opacity="0.7"
+                  transform="rotate(-90 12 140)"
+                >I_C</text>
               </svg>
             </div>
           </div>
@@ -705,15 +1750,30 @@ const analysisItems = computed(() => {
 
     <template #analysis>
       <UPageGrid class="grid-cols-1 gap-2">
-        <UAlert v-for="(item, i) in analysisItems" :key="i" color="neutral" variant="soft" icon="i-lucide-info" :description="item" />
+        <UAlert
+          v-for="(item, i) in analysisItems"
+          :key="i"
+          color="neutral"
+          variant="soft"
+          icon="i-lucide-info"
+          :description="item"
+        />
       </UPageGrid>
     </template>
 
     <template #conclusion>
-      <UAlert color="neutral" variant="soft" :description="`La simulazione conferma il modello equivalente a due diodi e due generatori controllati: la regione di ${op.region.toLowerCase()} è determinata dalle polarizzazioni delle giunzioni e le correnti rispettano I_E = I_C + I_B.`" />
+      <UAlert
+        color="neutral"
+        variant="soft"
+        :description="`La simulazione conferma il modello equivalente a due diodi e due generatori controllati: la regione di ${op.region.toLowerCase()} è determinata dalle polarizzazioni delle giunzioni e le correnti rispettano I_E = I_C + I_B.`"
+      />
       <UCard class="mt-2">
-        <UBadge color="neutral" variant="soft" size="xs" label="Verifica teorica" class="tracking-wide uppercase w-fit mb-2" />
-        <UAlert :color="op.kclError < 1e-9 ? 'success' : 'warning'" variant="subtle" :description="`Errore di Kirchhoff: ${formatPercent(op.kclError * 100)} · reciprocità I_SF/I_SR: ${formatNum(op.reciprocity, 3)} decadi.`" />
+        <span class="text-xs text-muted">Verifica teorica</span>
+        <UAlert
+          :color="op.kclError < 1e-9 ? 'success' : 'warning'"
+          variant="subtle"
+          :description="`Errore di Kirchhoff: ${formatPercent(op.kclError * 100)} · reciprocità I_SF/I_SR: ${formatNum(op.reciprocity, 3)} decadi.`"
+        />
       </UCard>
     </template>
   </SimulationShell>

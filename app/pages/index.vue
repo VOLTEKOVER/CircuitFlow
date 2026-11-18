@@ -1,108 +1,87 @@
 <script setup lang="ts">
-import { simulations as allSimulations } from '~/utils/simulations'
+import { simulations } from '~/utils/simulations'
 
-const simulations = allSimulations.slice(0, 6)
+useSeoMeta({
+  title: 'CircuitFlow — Elettronica interattiva',
+  description: 'Libreria di simulazioni elettroniche interattive: modelli, parametri, grafici e analisi.'
+})
 
-const features = [
-  {
-    icon: 'i-lucide-circuit-board',
-    title: 'Progettazione chiara',
-    description: 'Strumenti essenziali per descrivere e organizzare sistemi elettronici in modo preciso.'
-  },
-  {
-    icon: 'i-lucide-activity',
-    title: 'Analisi leggibile',
-    description: 'Parametri e risultati presentati con gerarchia visiva pulita e immediata.'
-  },
-  {
-    icon: 'i-lucide-library-big',
-    title: 'Libreria modulare',
-    description: 'Raccolta di modelli e simulazioni accessibili da una vista a griglia ordinata.'
-  }
-]
+const featured = simulations.slice(0, 6)
 </script>
 
 <template>
   <UPage>
-    <UPageHero
-      title="CircuitFlow"
-      description="Ambiente minimale per lo studio e l’analisi dell’elettronica, con una libreria di simulazioni in crescita."
-      :links="[
-        { label: 'Apri libreria', to: '/libreria', color: 'primary', size: 'lg', icon: 'i-lucide-grid-2x2' },
-        { label: 'Simulazione Ebers–Moll', to: '/libreria/ebers-moll', color: 'neutral', variant: 'outline', size: 'lg' }
-      ]"
-    />
+    <UContainer class="py-8 sm:py-10">
+      <UPageHeader
+        title="CircuitFlow"
+        description="Simulazioni elettroniche interattive, con parametri regolabili e grafici in tempo reale."
+        :ui="{
+          root: 'border-b-0 pb-0 mb-6 max-w-2xl',
+          title: 'text-2xl sm:text-3xl font-semibold tracking-tight text-highlighted',
+          description: 'mt-2 text-sm text-muted'
+        }"
+      >
+        <template #links>
+          <UButton
+            to="/libreria"
+            size="xs"
+            color="primary"
+            variant="solid"
+            label="Apri la libreria"
+            trailing-icon="i-lucide-arrow-right"
+          />
+        </template>
+      </UPageHeader>
 
-    <UPageSection
-      id="funzionalita"
-      title="Essenziale, focalizzato"
-      description="Un’interfaccia ridotta al necessario per lavorare sui contenuti senza distrazioni."
-      :features="features"
-    />
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="text-sm font-medium text-highlighted">
+          Simulazioni in evidenza
+        </h2>
+        <UButton
+          to="/libreria"
+          size="xs"
+          color="neutral"
+          variant="ghost"
+          label="Tutte"
+          trailing-icon="i-lucide-arrow-right"
+        />
+      </div>
 
-    <UPageSection
-      id="libreria"
-      title="Libreria simulazioni"
-      description="Tutte le simulazioni disponibili, raccolte in una vista a griglia."
-    >
-      <UPageGrid>
+      <UPageGrid class="sm:grid-cols-2 lg:grid-cols-3">
         <ULink
-          v-for="(sim, index) in simulations"
+          v-for="sim in featured"
           :key="sim.to"
           :to="sim.to"
-          class="sim-card block focus:outline-none"
-          :style="{ '--delay': `${index * 120}ms` }"
           raw
+          class="block focus:outline-none"
         >
-          <UPageCard
-            :icon="sim.icon"
-            :title="sim.title"
-            :description="sim.description"
-            variant="outline"
+          <UCard
             class="h-full transition-colors hover:border-[var(--ui-primary)]/50"
+            :ui="{ body: 'h-full flex flex-col gap-1.5 p-3' }"
           >
-            <template #footer>
-              <UPageGrid class="grid-cols-none flex flex-wrap gap-2">
-                <UBadge v-for="tag in sim.tags" :key="tag" color="neutral" variant="subtle" size="sm" :label="tag" />
-              </UPageGrid>
-            </template>
-          </UPageCard>
+            <div class="flex items-center gap-2">
+              <UIcon
+                :name="sim.icon"
+                class="size-4 shrink-0 text-primary"
+              />
+              <span class="text-sm font-medium text-highlighted">{{ sim.title }}</span>
+            </div>
+            <p class="text-xs text-muted leading-relaxed">
+              {{ sim.description }}
+            </p>
+            <div class="mt-auto flex flex-wrap gap-1 pt-1">
+              <UBadge
+                v-for="tag in sim.tags.slice(0, 2)"
+                :key="tag"
+                color="neutral"
+                variant="subtle"
+                size="xs"
+                :label="tag"
+              />
+            </div>
+          </UCard>
         </ULink>
       </UPageGrid>
-
-      <UContainer class="mt-8 flex justify-center">
-        <UButton to="/libreria" color="neutral" variant="ghost" label="Vedi tutte le simulazioni" trailing-icon="i-lucide-arrow-right" />
-      </UContainer>
-    </UPageSection>
-
-    <UPageSection id="inizia">
-      <UPageCTA
-        title="Inizia dalla libreria"
-        description="Apri la vista completa delle simulazioni ed esplora i modelli disponibili."
-        variant="subtle"
-        :links="[{
-          label: 'Vai alla libreria',
-          to: '/libreria',
-          color: 'primary',
-          icon: 'i-lucide-grid-2x2'
-        }]"
-      />
-    </UPageSection>
+    </UContainer>
   </UPage>
 </template>
-
-<style scoped>
-.sim-card {
-  opacity: 0;
-  transform: translateY(12px);
-  animation: sim-reveal 500ms ease forwards;
-  animation-delay: var(--delay, 0ms);
-}
-
-@keyframes sim-reveal {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-</style>
